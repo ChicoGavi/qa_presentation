@@ -1,0 +1,2081 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gestión de Pruebas y Trazabilidad en QA — Equipo 3</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ==========================================================================
+           VARIABLES Y ESTÉTICA BASE (Inspirada en el diseño original del Equipo 3)
+           ========================================================================== */
+        :root {
+            --bg-grid: #E2E5EA;
+            --bg-line: rgba(255, 255, 255, 0.55);
+            --surface: #FFFFFF;
+            --surface-soft: #F8FAFC;
+            --navy: #0F172A;
+            --navy-card: #111C33;
+            --text-main: #0F172A;
+            --text-muted: #475569;
+            --text-light: #94A3B8;
+
+            --blue: #2563EB;
+            --blue-soft: #EFF6FF;
+            --blue-border: #BFDBFE;
+
+            --cyan: #0284C7;
+            --cyan-soft: #E0F2FE;
+
+            --green: #059669;
+            --green-soft: #ECFDF5;
+            --green-neon: #10B981;
+
+            --amber: #D97706;
+            --amber-soft: #FEF3C7;
+
+            --red: #DC2626;
+            --red-soft: #FEF2F2;
+            --red-border: #FECACA;
+
+            --purple: #7C3AED;
+            --purple-soft: #F3E8FF;
+
+            --radius-lg: 18px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-card: 0 12px 32px -8px rgba(15, 23, 42, 0.10), 0 4px 12px -2px rgba(15, 23, 42, 0.05);
+            --shadow-hover: 0 22px 45px -10px rgba(37, 99, 235, 0.18), 0 8px 20px -4px rgba(15, 23, 42, 0.08);
+            --hud-h: 64px;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text-main);
+            background-color: var(--bg-grid);
+            /* Cuadrícula arquitectónica idéntica a las diapositivas */
+            background-image:
+                    linear-gradient(to right, var(--bg-line) 1px, transparent 1px),
+                    linear-gradient(to bottom, var(--bg-line) 1px, transparent 1px);
+            background-size: 56px 56px;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ==========================================================================
+           BARRA DE NAVEGACIÓN SUPERIOR (HUD)
+           ========================================================================== */
+        .hud {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: var(--hud-h);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 clamp(16px, 3vw, 40px);
+            z-index: 100;
+        }
+
+        .hud-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .hud-badge {
+            background: var(--navy);
+            color: #34D399;
+            font-weight: 800;
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .hud-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            display: none;
+        }
+        @media (min-width: 768px) {
+            .hud-title { display: inline-block; }
+        }
+
+        .hud-dots {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-dot {
+            width: 30px;
+            height: 8px;
+            border-radius: 999px;
+            border: none;
+            background: rgba(15, 23, 42, 0.16);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            padding: 0;
+        }
+        .nav-dot:hover {
+            background: rgba(37, 99, 235, 0.45);
+        }
+        .nav-dot.active {
+            width: 48px;
+            background: var(--blue);
+            box-shadow: 0 0 12px rgba(37, 99, 235, 0.45);
+        }
+
+        .hud-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-hud {
+            background: var(--surface);
+            color: var(--text-main);
+            border: 1px solid rgba(15, 23, 42, 0.14);
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-hud:hover {
+            background: var(--blue);
+            color: #FFF;
+            border-color: var(--blue);
+            transform: translateY(-1px);
+        }
+
+        .slide-counter {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 0.82rem;
+            background: var(--blue-soft);
+            color: var(--blue);
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--blue-border);
+        }
+
+        .progress-line {
+            position: fixed;
+            top: var(--hud-h);
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--blue), var(--cyan), var(--green-neon));
+            width: 0%;
+            z-index: 101;
+            transition: width 0.35s ease;
+        }
+
+        /* ==========================================================================
+           CONTENEDOR DE DIAPOSITIVAS Y ANIMACIONES DE ENTRADA
+           ========================================================================== */
+        #deck {
+            height: 100dvh;
+            padding-top: var(--hud-h);
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+        #deck::-webkit-scrollbar {
+            width: 6px;
+        }
+        #deck::-webkit-scrollbar-thumb {
+            background: rgba(15, 23, 42, 0.2);
+            border-radius: 999px;
+        }
+
+        .slide {
+            min-height: calc(100dvh - var(--hud-h));
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(24px, 4vh, 48px) clamp(20px, 4vw, 64px);
+            position: relative;
+        }
+
+        .slide-inner {
+            width: 100%;
+            max-width: 1260px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: clamp(16px, 2.4vh, 26px);
+        }
+
+        /* Animaciones escalonadas al entrar en vista */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .slide.in-view .reveal {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .slide.in-view .d-1 { transition-delay: 0.08s; }
+        .slide.in-view .d-2 { transition-delay: 0.16s; }
+        .slide.in-view .d-3 { transition-delay: 0.24s; }
+        .slide.in-view .d-4 { transition-delay: 0.32s; }
+        .slide.in-view .d-5 { transition-delay: 0.40s; }
+
+        /* ==========================================================================
+           CABECERAS Y BANNERS DE DIAPOSITIVA (Estilo original de las capturas)
+           ========================================================================== */
+        .slide-header {
+            display: flex;
+            align-items: stretch;
+            gap: 16px;
+        }
+
+        .header-bar {
+            width: 6px;
+            border-radius: 999px;
+            background: var(--blue);
+            flex-shrink: 0;
+            box-shadow: 0 0 14px rgba(37, 99, 235, 0.4);
+        }
+
+        .header-texts {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .header-kicker {
+            font-size: clamp(0.88rem, 1.2vw, 1.08rem);
+            font-weight: 700;
+            color: var(--blue);
+            margin: 0;
+        }
+
+        .header-title {
+            font-size: clamp(1.7rem, 3.2vw, 2.75rem);
+            font-weight: 800;
+            color: var(--navy);
+            margin: 0;
+            letter-spacing: -0.025em;
+            line-height: 1.12;
+        }
+
+        /* Banner píldora superior */
+        .pill-banner {
+            background: var(--blue-soft);
+            border: 2px solid var(--blue-border);
+            border-radius: 14px;
+            padding: 12px 20px;
+            text-align: center;
+            font-weight: 700;
+            font-size: clamp(0.92rem, 1.25vw, 1.1rem);
+            color: var(--blue);
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.07);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .pill-banner span.dark {
+            color: var(--navy);
+        }
+
+        /* ==========================================================================
+           TARJETAS CON EFECTO 3D TILT Y BORDE SUPERIOR DE COLOR
+           ========================================================================== */
+        .cards-grid {
+            display: grid;
+            gap: 22px;
+            width: 100%;
+        }
+        .cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+        @media (max-width: 1024px) {
+            .cols-4, .cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 680px) {
+            .cols-4, .cols-3, .cols-2 { grid-template-columns: 1fr; }
+        }
+
+        .qa-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 26px 24px;
+            box-shadow: var(--shadow-card);
+            border: 1px solid rgba(15, 23, 42, 0.07);
+            border-top: 6px solid var(--blue);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+            transform-style: preserve-3d;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .qa-card:hover {
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* Destello radial interactivo que sigue el mouse */
+        .qa-card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgba(37, 99, 235, 0.06), transparent 60%);
+            pointer-events: none;
+        }
+
+        .qa-card.top-blue { border-top-color: var(--blue); }
+        .qa-card.top-cyan { border-top-color: var(--cyan); }
+        .qa-card.top-green { border-top-color: var(--green); }
+        .qa-card.top-amber { border-top-color: var(--amber); }
+        .qa-card.top-red { border-top-color: var(--red); }
+        .qa-card.top-purple { border-top-color: var(--purple); }
+
+        /* Círculos de ícono o número (01, 02, 03, 04) */
+        .badge-circle {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.05rem;
+            flex-shrink: 0;
+        }
+        .bc-blue { background: var(--blue-soft); color: var(--blue); }
+        .bc-cyan { background: var(--cyan-soft); color: var(--cyan); }
+        .bc-green { background: var(--green-soft); color: var(--green); }
+        .bc-amber { background: var(--amber-soft); color: var(--amber); }
+        .bc-red { background: var(--red-soft); color: var(--red); }
+
+        .card-kicker {
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin: 0;
+        }
+        .ck-blue { color: var(--blue); }
+        .ck-cyan { color: var(--cyan); }
+        .ck-green { color: var(--green); }
+        .ck-amber { color: var(--amber); }
+        .ck-red { color: var(--red); }
+
+        .card-heading {
+            font-size: clamp(1.25rem, 1.8vw, 1.55rem);
+            font-weight: 800;
+            color: var(--navy);
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .card-sub {
+            font-size: 0.98rem;
+            font-weight: 700;
+            margin: -4px 0 4px 0;
+        }
+
+        .card-body {
+            font-size: 0.98rem;
+            line-height: 1.55;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .qa-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            color: var(--text-muted);
+            font-size: 0.96rem;
+            line-height: 1.48;
+        }
+        .qa-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .qa-list li b {
+            color: var(--navy);
+        }
+
+        /* ==========================================================================
+           DIAPOSITIVA 1: PORTADA CON WIDGET OSCURO Y ORBES FLOTANTES
+           ========================================================================== */
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: clamp(28px, 4vw, 56px);
+            align-items: center;
+        }
+        @media (max-width: 900px) {
+            .hero-grid { grid-template-columns: 1fr; }
+        }
+
+        .hero-title-box {
+            display: flex;
+            align-items: stretch;
+            gap: 20px;
+        }
+        .hero-title-bar {
+            width: 6px;
+            background: var(--blue);
+            border-radius: 999px;
+        }
+        .hero-main-title {
+            font-size: clamp(2.4rem, 5vw, 4.1rem);
+            font-weight: 900;
+            color: var(--navy);
+            line-height: 1.08;
+            letter-spacing: -0.03em;
+            margin: 8px 0 0 0;
+        }
+
+        .author-card {
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 28px 32px;
+            box-shadow: var(--shadow-card);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            margin-top: 28px;
+            max-width: 620px;
+        }
+        .author-label {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-light);
+            margin: 0 0 8px 0;
+        }
+        .author-names {
+            font-size: clamp(1.2rem, 1.9vw, 1.55rem);
+            font-weight: 700;
+            color: #1E293B;
+            margin: 0;
+        }
+
+        /* Widget oscuro derecho con orbes animados */
+        .hero-visual-wrap {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+            animation: floatOrb 7s ease-in-out infinite;
+        }
+        .orb-blue {
+            width: 270px;
+            height: 270px;
+            background: rgba(59, 130, 246, 0.25);
+            top: -25px;
+            right: -15px;
+            backdrop-filter: blur(4px);
+        }
+        .orb-green {
+            width: 195px;
+            height: 195px;
+            background: rgba(16, 185, 129, 0.24);
+            bottom: -20px;
+            left: 10px;
+            animation-delay: -3.5s;
+        }
+
+        @keyframes floatOrb {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-12px, 14px) scale(1.06); }
+        }
+
+        .dark-qa-widget {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 340px;
+            min-height: 430px;
+            background: var(--navy-card);
+            border-radius: 24px;
+            padding: 30px 26px;
+            color: #FFF;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.45);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .equipo-pill {
+            align-self: flex-start;
+            background: rgba(16, 185, 129, 0.16);
+            color: #10B981;
+            font-weight: 800;
+            font-size: 0.85rem;
+            letter-spacing: 0.06em;
+            padding: 8px 16px;
+            border-radius: 999px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .wave-graphic {
+            my: auto;
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .wave-svg {
+            width: 100%;
+            height: 120px;
+            overflow: visible;
+        }
+
+        .sine-path {
+            fill: none;
+            stroke: #0284C7;
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-dasharray: 400;
+            stroke-dashoffset: 0;
+            animation: pulseWave 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulseWave {
+            0% { stroke-dashoffset: 80; stroke: #0284C7; }
+            100% { stroke-dashoffset: 0; stroke: #38BDF8; }
+        }
+
+        .widget-footer small {
+            display: block;
+            color: #94A3B8;
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .widget-footer strong {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #FFFFFF;
+        }
+
+        /* ==========================================================================
+           INTERACCIÓN DIAPOSITIVA 2: CONMUTADOR DE HILOS DE TRAZABILIDAD
+           ========================================================================== */
+        .trace-visualizer {
+            background: var(--surface);
+            border-radius: var(--radius-md);
+            padding: 16px 22px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: var(--shadow-card);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .trace-nodes {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .t-node {
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.84rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.35s ease;
+        }
+        .t-connector {
+            flex: 1;
+            min-width: 28px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--blue), var(--green));
+            position: relative;
+            transition: all 0.35s ease;
+        }
+        .trace-visualizer.chaos-mode .t-connector {
+            background: repeating-linear-gradient(90deg, var(--red) 0 6px, transparent 6px 12px);
+            opacity: 0.45;
+        }
+        .trace-visualizer.chaos-mode .t-node {
+            filter: grayscale(0.4);
+            transform: rotate(-1deg);
+        }
+
+        /* ==========================================================================
+           INTERACCIÓN DIAPOSITIVA 3: EXPLORADOR DE FASES SHIFT-LEFT
+           ========================================================================== */
+        .phase-card {
+            cursor: pointer;
+        }
+        .phase-card.active-phase {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 38px -8px rgba(37, 99, 235, 0.25);
+            outline: 2px solid var(--blue);
+        }
+
+        .phase-drawer {
+            background: var(--navy);
+            color: #F8FAFC;
+            border-radius: var(--radius-md);
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            box-shadow: var(--shadow-card);
+        }
+        .phase-drawer-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.84rem;
+            background: rgba(255, 255, 255, 0.07);
+            padding: 10px 14px;
+            border-radius: 8px;
+            color: #38BDF8;
+            border: 1px solid rgba(56, 189, 248, 0.25);
+        }
+
+        /* ==========================================================================
+           DIAPOSITIVA 4: HERRAMIENTAS Y EJEMPLO PRÁCTICO
+           ========================================================================== */
+        .tools-layout {
+            display: grid;
+            grid-template-columns: 0.95fr 1.55fr;
+            gap: 24px;
+            align-items: stretch;
+        }
+        @media (max-width: 900px) {
+            .tools-layout { grid-template-columns: 1fr; }
+        }
+
+        .right-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .impact-alert-box {
+            background: var(--red-soft);
+            border: 2px solid var(--red-border);
+            border-radius: var(--radius-lg);
+            padding: 22px 24px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            transition: all 0.35s ease;
+        }
+        .impact-alert-box.resolved {
+            background: var(--green-soft);
+            border-color: #A7F3D0;
+        }
+        .impact-bar {
+            width: 6px;
+            align-self: stretch;
+            background: var(--red);
+            border-radius: 999px;
+            flex-shrink: 0;
+        }
+        .impact-alert-box.resolved .impact-bar {
+            background: var(--green);
+        }
+
+        /* Mini tabla interactiva de Matriz de Trazabilidad */
+        .rtm-mini-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.84rem;
+            margin-top: 10px;
+            background: var(--surface-soft);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+        }
+        .rtm-mini-table th {
+            background: #F1F5F9;
+            color: var(--navy);
+            text-align: left;
+            padding: 8px 12px;
+            font-weight: 800;
+        }
+        .rtm-mini-table td {
+            padding: 8px 12px;
+            border-top: 1px solid rgba(15, 23, 42, 0.06);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.74rem;
+            font-family: 'Inter', sans-serif;
+        }
+        .sp-pass { background: #D1FAE5; color: #065F46; }
+        .sp-fail { background: #FEE2E2; color: #991B1B; }
+        .sp-open { background: #FEF3C7; color: #92400E; }
+        .sp-merged { background: #EDE9FE; color: #5B21B6; }
+
+        /* ==========================================================================
+           DIAPOSITIVA 5 (NUEVA): SIMULADOR INTERACTIVO DE GITHUB (Issues, PR, Projects)
+           ========================================================================== */
+        .gh-simulator {
+            background: #0D1117;
+            color: #E6EDF3;
+            border-radius: var(--radius-lg);
+            border: 1px solid #30363D;
+            box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.35);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gh-top-bar {
+            background: #161B22;
+            padding: 12px 20px;
+            border-bottom: 1px solid #30363D;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .gh-repo-path {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #58A6FF;
+            font-weight: 600;
+        }
+
+        .gh-stepper {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .gh-step-btn {
+            background: #21262D;
+            color: #C9D1D9;
+            border: 1px solid #30363D;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .gh-step-btn:hover {
+            background: #30363D;
+            color: #FFF;
+        }
+        .gh-step-btn.active {
+            background: #238636;
+            color: #FFFFFF;
+            border-color: #2EA043;
+        }
+
+        .gh-body {
+            display: grid;
+            grid-template-columns: 1.35fr 1fr;
+            min-height: 340px;
+        }
+        @media (max-width: 960px) {
+            .gh-body { grid-template-columns: 1fr; }
+        }
+
+        /* Tablero Kanban GitHub Projects */
+        .gh-board {
+            padding: 16px;
+            border-right: 1px solid #30363D;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            background: #0D1117;
+        }
+        @media (max-width: 680px) {
+            .gh-board { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .gh-col {
+            background: #161B22;
+            border: 1px solid #30363D;
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .gh-col-head {
+            font-size: 0.73rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #8B949E;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #21262D;
+        }
+
+        .gh-card-item {
+            background: #21262D;
+            border: 1px solid #30363D;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.78rem;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            animation: popIn 0.35s ease;
+        }
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.92); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .gh-card-item.highlight-card {
+            border-color: #58A6FF;
+            box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.25);
+        }
+
+        .gh-card-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: #8B949E;
+        }
+        .gh-card-title {
+            font-weight: 700;
+            color: #E6EDF3;
+            line-height: 1.3;
+        }
+        .gh-labels {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .gh-lbl {
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 999px;
+        }
+        .lbl-req { background: rgba(56, 139, 253, 0.2); color: #58A6FF; border: 1px solid rgba(56, 139, 253, 0.4); }
+        .lbl-bug { background: rgba(248, 81, 73, 0.2); color: #FF7B72; border: 1px solid rgba(248, 81, 73, 0.4); }
+        .lbl-p1  { background: #DA3633; color: #FFF; }
+        .lbl-pr  { background: rgba(163, 113, 247, 0.2); color: #D2A8FF; border: 1px solid rgba(163, 113, 247, 0.4); }
+        .lbl-ok  { background: rgba(46, 160, 67, 0.2); color: #3FB950; border: 1px solid rgba(46, 160, 67, 0.4); }
+
+        .gh-avatars {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 2px;
+            font-size: 0.68rem;
+            color: #8B949E;
+        }
+        .avatar-chip {
+            background: #30363D;
+            color: #E6EDF3;
+            padding: 2px 6px;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+
+        /* Panel Inspector Derecho (Detalle de Issue / PR / Automatización) */
+        .gh-inspector {
+            padding: 18px 20px;
+            background: #161B22;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .gh-inspector-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .gh-code-block {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            background: #0D1117;
+            border: 1px solid #30363D;
+            border-radius: 8px;
+            padding: 12px;
+            color: #C9D1D9;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+        .gh-code-block .kw { color: #FF7B72; font-weight: 700; }
+        .gh-code-block .ref { color: #58A6FF; font-weight: 700; }
+        .gh-code-block .ok { color: #3FB950; font-weight: 700; }
+
+        /* ==========================================================================
+           DIAPOSITIVA 6: SAUCEDEMO CON CONECTORES ANIMADOS Y SIMULADOR DEL BUG
+           ========================================================================== */
+        .sauce-flow {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr auto 1fr;
+            align-items: stretch;
+            gap: 12px;
+        }
+        @media (max-width: 960px) {
+            .sauce-flow { grid-template-columns: 1fr; }
+            .flow-arrow { transform: rotate(90deg); justify-self: center; }
+        }
+
+        .flow-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748B;
+            font-weight: 900;
+            font-size: 1.5rem;
+            animation: pulseArrow 1.6s infinite ease-in-out;
+        }
+        @keyframes pulseArrow {
+            0%, 100% { transform: translateX(0); opacity: 0.55; }
+            50% { transform: translateX(5px); opacity: 1; color: var(--blue); }
+        }
+
+        .sauce-sandbox {
+            background: var(--surface);
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            box-shadow: var(--shadow-card);
+        }
+
+        .btn-remove-demo {
+            background: #FFF;
+            color: var(--red);
+            border: 2px solid var(--red);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-remove-demo:hover {
+            background: var(--red-soft);
+        }
+        .shake-error {
+            animation: shake 0.4s ease;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            50% { transform: translateX(6px); }
+            75% { transform: translateX(-4px); }
+        }
+
+        /* ==========================================================================
+           CAJAS INFERIORES DE IMPACTO Y FUENTES (Estilo diapositivas 5 y 6)
+           ========================================================================== */
+        .blue-callout {
+            background: var(--blue-soft);
+            border: 2px solid var(--blue-border);
+            border-radius: var(--radius-lg);
+            padding: 20px 26px;
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.06);
+        }
+        .callout-bar {
+            width: 6px;
+            align-self: stretch;
+            background: var(--blue);
+            border-radius: 999px;
+            flex-shrink: 0;
+        }
+        .callout-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #1E3A8A;
+            margin: 0 0 6px 0;
+        }
+        .callout-text {
+            font-size: 0.98rem;
+            line-height: 1.5;
+            color: #1E40AF;
+            margin: 0;
+        }
+
+        .ai-output-box {
+            margin-top: 10px;
+            background: var(--surface-soft);
+            border: 1px dashed var(--blue-border);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--navy);
+            min-height: 54px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Barra de progreso superior -->
+<div class="progress-line" id="progress-line"></div>
+
+<!-- HUD de Navegación -->
+<header class="hud">
+    <div class="hud-left">
+        <span class="hud-badge">EQUIPO 3 · QA</span>
+        <span class="hud-title">Gestión de Pruebas y Trazabilidad en QA</span>
+    </div>
+
+    <nav class="hud-dots" id="hud-dots" aria-label="Navegación de diapositivas"></nav>
+
+    <div class="hud-right">
+        <button class="btn-hud" id="btn-prev" title="Diapositiva anterior (←)">←</button>
+        <span class="slide-counter"><span id="cur-slide">1</span> / <span id="tot-slides">7</span></span>
+        <button class="btn-hud" id="btn-next" title="Siguiente diapositiva (→)">→</button>
+        <button class="btn-hud" id="btn-fullscreen" title="Pantalla completa (F)">⛶ Presentar</button>
+    </div>
+</header>
+
+<!-- ==========================================================================
+     DECK DE DIAPOSITIVAS
+     ========================================================================== -->
+<main id="deck">
+
+    <!-- ========================================================================
+         DIAPOSITIVA 1: PORTADA (Diseño original con Widget QA y Orbes)
+         ======================================================================== -->
+    <section class="slide" data-title="Portada">
+        <div class="slide-inner">
+            <div class="hero-grid">
+                <!-- Columna Izquierda -->
+                <div class="reveal d-1">
+                    <div class="hero-title-box">
+                        <div class="hero-title-bar"></div>
+                        <div>
+                            <p class="header-kicker">Actividad en Clase – Investigación Aplicada</p>
+                            <h1 class="hero-main-title">Gestión de Pruebas<br>y Trazabilidad en QA</h1>
+                        </div>
+                    </div>
+
+                    <div class="author-card qa-card top-blue" style="border-top-width: 4px;">
+                        <p class="author-label">Presentado por</p>
+                        <p class="author-names">Santiago Gaviria Castro y Andrés González Ospina</p>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
+                            <span class="status-pill sp-pass">✓ ISTQB Foundation Aligned</span>
+                            <span class="status-pill sp-merged">⚡ GitHub Projects + SauceDemo</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Tarjeta Oscura Flotante con Orbes -->
+                <div class="hero-visual-wrap reveal d-2">
+                    <div class="orb orb-blue"></div>
+                    <div class="orb orb-green"></div>
+
+                    <div class="dark-qa-widget qa-card" style="border-top:none;">
+                        <span class="equipo-pill">EQUIPO 3</span>
+
+                        <div class="wave-graphic">
+                            <!-- Icono Lupa QA -->
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00B4D8" stroke-width="2.5" stroke-linecap="round" style="margin-bottom: 12px;">
+                                <circle cx="11" cy="11" r="7"></circle>
+                                <line x1="20" y1="20" x2="16.35" y2="16.35"></line>
+                            </svg>
+
+                            <!-- Onda Sinusoidal y Nodos de Trazabilidad -->
+                            <svg class="wave-svg" viewBox="0 0 280 110">
+                                <line x1="0" y1="20" x2="270" y2="20" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+                                <line x1="50" y1="20" x2="230" y2="20" stroke="rgba(255,255,255,0.28)" stroke-width="3" stroke-linecap="round"/>
+                                <circle cx="28" cy="20" r="4.5" fill="#10B981"/>
+
+                                <line x1="0" y1="58" x2="270" y2="58" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+                                <line x1="50" y1="58" x2="190" y2="58" stroke="rgba(255,255,255,0.28)" stroke-width="3" stroke-linecap="round"/>
+                                <circle cx="28" cy="58" r="4.5" fill="#10B981"/>
+
+                                <line x1="0" y1="96" x2="270" y2="96" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+                                <line x1="50" y1="96" x2="215" y2="96" stroke="rgba(255,255,255,0.28)" stroke-width="3" stroke-linecap="round"/>
+                                <circle cx="28" cy="96" r="4.5" fill="#38BDF8"/>
+
+                                <path class="sine-path" d="M 18 42 Q 75 5, 140 38 T 262 32" />
+                            </svg>
+                        </div>
+
+                        <div class="widget-footer">
+                            <small>QUALITY ASSURANCE</small>
+                            <strong>Framework &amp; Control</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================
+         DIAPOSITIVA 2: ¿QUÉ ES Y QUÉ PROBLEMA RESUELVE?
+         ======================================================================== -->
+    <section class="slide" data-title="¿Qué es y qué problema resuelve?">
+        <div class="slide-inner">
+            <header class="slide-header reveal d-1">
+                <div class="header-bar"></div>
+                <div class="header-texts">
+                    <p class="header-kicker">Gestión de Pruebas y Trazabilidad en QA</p>
+                    <h2 class="header-title">¿Qué es y qué problema resuelve?</h2>
+                </div>
+            </header>
+
+            <!-- 3 Tarjetas Principales -->
+            <div class="cards-grid cols-3">
+                <!-- Tarjeta 1: ¿Qué es? -->
+                <article class="qa-card top-blue reveal d-2">
+                    <div class="badge-circle bc-blue">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                    </div>
+                    <h3 class="card-heading">¿Qué es?</h3>
+                    <p class="card-sub ck-blue">Concepto Base</p>
+                    <p class="card-body">
+                        Es la <b style="color:var(--blue);">administración estratégica</b> de todo el proceso de pruebas.
+                    </p>
+                    <p class="card-body">
+                        Crea un <b style="color:var(--navy);">"hilo conductor"</b> (trazabilidad) que conecta directamente lo que el cliente pidió, las pruebas que diseñamos y los errores que encontramos.
+                    </p>
+                </article>
+
+                <!-- Tarjeta 2: ¿Para qué sirve? -->
+                <article class="qa-card top-green reveal d-3">
+                    <div class="badge-circle bc-green">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="3" x2="12" y2="8"/></svg>
+                    </div>
+                    <h3 class="card-heading">¿Para qué sirve?</h3>
+                    <p class="card-sub ck-green">Uso en la empresa</p>
+                    <ul class="qa-list">
+                        <li><span style="color:var(--green); font-weight:900;">✓</span><span><b>Medir la cobertura</b> de pruebas en el sistema.</span></li>
+                        <li><span style="color:var(--green); font-weight:900;">✓</span><span><b>Tomar decisiones</b> basadas en datos reales.</span></li>
+                        <li><span style="color:var(--green); font-weight:900;">✓</span><span><b>Auditar</b> la calidad del software con precisión.</span></li>
+                    </ul>
+                </article>
+
+                <!-- Tarjeta 3: Problema -->
+                <article class="qa-card top-red reveal d-4">
+                    <div class="badge-circle bc-red">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <h3 class="card-heading">Problema</h3>
+                    <p class="card-sub ck-red">Elimina el caos</p>
+                    <p class="card-body" style="font-weight:700; color:var(--navy);">Evita incertidumbre como:</p>
+                    <p class="card-body" style="color:#991B1B; font-style:italic; background:var(--red-soft); padding:8px 12px; border-radius:8px;">
+                        "¿Alguien probó el login?"<br>
+                        "¿Por qué este bug llegó a producción?"
+                    </p>
+                    <ul class="qa-list">
+                        <li><span style="color:var(--red); font-weight:900;">•</span><span><b>Previene</b> duplicar esfuerzos.</span></li>
+                        <li><span style="color:var(--red); font-weight:900;">•</span><span><b>Brinda</b> visibilidad total.</span></li>
+                    </ul>
+                </article>
+            </div>
+
+            <!-- Barra Interactiva: Demostración del "Hilo Conductor" en vivo -->
+            <div class="trace-visualizer reveal d-5" id="trace-demo-bar">
+                <div class="trace-nodes">
+                    <span class="t-node" style="background:var(--blue-soft); color:var(--blue);">📋 Requisito del Cliente (REQ)</span>
+                    <div class="t-connector"></div>
+                    <span class="t-node" style="background:var(--cyan-soft); color:var(--cyan);">🧪 Caso de Prueba (CP)</span>
+                    <div class="t-connector"></div>
+                    <span class="t-node" style="background:var(--red-soft); color:var(--red);">🐛 Defecto Detectado (BUG)</span>
+                    <div class="t-connector"></div>
+                    <span class="t-node" style="background:var(--green-soft); color:var(--green);" id="trace-end-badge">🚀 Decisión GO / NO-GO</span>
+                </div>
+                <button class="btn-hud" id="btn-toggle-chaos" style="background:var(--navy); color:#FFF;">
+                    🔄 Simular: Modo Con Trazabilidad
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================
+         DIAPOSITIVA 3: ¿EN QUÉ MOMENTO DEL PROCESO SE UTILIZA?
+         ======================================================================== -->
+    <section class="slide" data-title="¿En qué momento se utiliza?">
+        <div class="slide-inner">
+            <header class="slide-header reveal d-1">
+                <div class="header-bar"></div>
+                <div class="header-texts">
+                    <p class="header-kicker">Gestión de Pruebas y Trazabilidad en QA</p>
+                    <h2 class="header-title">¿En qué momento del proceso se utiliza?</h2>
+                </div>
+            </header>
+
+            <div class="pill-banner reveal d-2">
+                <span>⚡ <span class="dark">Se aplica en</span> TODO el ciclo de vida del software <span style="text-decoration:underline;">(Shift-Left Testing)</span></span>
+            </div>
+
+            <!-- 4 Tarjetas de Fases (Clicables para inspeccionar artefacto) -->
+            <div class="cards-grid cols-4">
+                <article class="qa-card top-blue phase-card active-phase reveal d-2" data-phase="1">
+                    <div class="badge-circle bc-blue">01</div>
+                    <h3 class="card-heading" style="font-size:1.15rem;">Fase de Análisis</h3>
+                    <p class="card-kicker ck-blue">REQUISITOS</p>
+                    <p class="card-body">
+                        Al recibir las <b style="color:var(--navy);">Historias de Usuario</b>, se inicia la matriz de trazabilidad.
+                    </p>
+                </article>
+
+                <article class="qa-card top-cyan phase-card reveal d-3" data-phase="2">
+                    <div class="badge-circle bc-cyan">02</div>
+                    <h3 class="card-heading" style="font-size:1.15rem;">Fase de Diseño</h3>
+                    <p class="card-kicker ck-cyan">CASOS DE PRUEBA</p>
+                    <p class="card-body">
+                        Al escribir los <b style="color:var(--navy);">Casos de Prueba</b> y enlazarlos directamente a los requisitos.
+                    </p>
+                </article>
+
+                <article class="qa-card top-amber phase-card reveal d-4" data-phase="3">
+                    <div class="badge-circle bc-amber">03</div>
+                    <h3 class="card-heading" style="font-size:1.15rem;">Fase de Ejecución</h3>
+                    <p class="card-kicker ck-amber">PRUEBAS Y BUGS</p>
+                    <p class="card-body">
+                        Al correr las pruebas y enlazar los <b style="color:var(--navy);">Bugs encontrados</b> a los Casos de Prueba.
+                    </p>
+                </article>
+
+                <article class="qa-card top-green phase-card reveal d-5" data-phase="4">
+                    <div class="badge-circle bc-green">04</div>
+                    <h3 class="card-heading" style="font-size:1.15rem;">Fase de Cierre</h3>
+                    <p class="card-kicker ck-green">GO / NO-GO</p>
+                    <p class="card-body">
+                        Al revisar la <b style="color:var(--navy);">Matriz de Trazabilidad</b> para decidir si se lanza el producto.
+                    </p>
+                </article>
+            </div>
+
+            <!-- Inspector Interactivo de Fase -->
+            <div class="phase-drawer reveal d-5" id="phase-drawer">
+                <div>
+                    <span style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em; color:#38BDF8; font-weight:800;" id="pd-tag">FASE 01 · ARTEFACTO EN GITHUB / EXCEL</span>
+                    <h4 style="margin:4px 0 0 0; font-size:1.05rem;" id="pd-title">Historia de Usuario registrada en la Matriz de Trazabilidad (RTM)</h4>
+                </div>
+                <div class="phase-drawer-code" id="pd-code">
+                    ID: REQ-05 | "Como comprador quiero retirar un producto del carrito" | Prioridad: Alta
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================
+         DIAPOSITIVA 4: HERRAMIENTAS Y EJEMPLO PRÁCTICO (Ecosistema Integrado)
+         ======================================================================== -->
+    <section class="slide" data-title="Herramientas y Ejemplo Práctico">
+        <div class="slide-inner">
+            <header class="slide-header reveal d-1">
+                <div class="header-bar"></div>
+                <div class="header-texts">
+                    <p class="header-kicker">Gestión de Pruebas y Trazabilidad en QA</p>
+                    <h2 class="header-title">Herramientas y Ejemplo Práctico</h2>
+                </div>
+            </header>
+
+            <div class="pill-banner reveal d-2">
+                <span>🛠️ Ecosistema Integrado: <b>GitHub // Microsoft Excel / Word</b></span>
+            </div>
+
+            <div class="tools-layout">
+                <!-- Columna Izquierda: Herramientas -->
+                <article class="qa-card top-blue reveal d-3">
+                    <div class="badge-circle bc-blue">01</div>
+                    <p class="card-kicker ck-blue">HERRAMIENTAS</p>
+                    <h3 class="card-heading">GitHub // Microsoft Excel/Word</h3>
+                    <p class="card-body">
+                        Sistemas donde llevamos los <b>Requisitos, Pruebas y Bugs</b> para realizar un seguimiento adecuado.
+                    </p>
+                    <div style="background:var(--surface-soft); padding:12px 14px; border-radius:10px; border:1px solid rgba(15,23,42,0.06);">
+                        <p class="card-body" style="font-size:0.88rem;">
+                            <b style="color:var(--navy);">¿Cómo se complementan?</b><br>
+                            • <b>Excel / Word:</b> Matriz de Trazabilidad (RTM) formal y diseño detallado de casos.<br>
+                            • <b>GitHub:</b> Control de Issues, ramas, Pull Requests y tablero de equipo en <i>GitHub Projects</i>.
+                        </p>
+                    </div>
+                    <p class="card-body" style="font-size:0.9rem; margin-top:auto;">
+                        <b style="color:var(--navy);">Otras:</b> Jira + Xray, Azure DevOps, ALM Octane.
+                    </p>
+                </article>
+
+                <!-- Columna Derecha: Ejemplo Práctico + Impacto -->
+                <div class="right-stack reveal d-4">
+                    <article class="qa-card top-cyan" style="padding: 20px 24px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                            <div>
+                                <p class="card-kicker ck-cyan">EJEMPLO PRÁCTICO</p>
+                                <h3 class="card-heading" style="font-size:1.35rem;">Flujo de Trazabilidad</h3>
+                            </div>
+                            <button class="btn-hud" id="btn-sim-fix" style="background:var(--blue-soft); color:var(--blue); border-color:var(--blue-border);">
+                                🔧 Simular Resolución del Bug en GitHub
+                            </button>
+                        </div>
+
+                        <ul class="qa-list" style="gap:6px;">
+                            <li><span>•</span><span><b>Requisito:</b> El usuario debe poder retirar el producto.</span></li>
+                            <li><span>•</span><span><b>Ejecución:</b> Se crean 2 Casos de Prueba. 1 falla y se reporta un Bug.</span></li>
+                        </ul>
+
+                        <!-- Mini Matriz RTM en vivo -->
+                        <table class="rtm-mini-table">
+                            <thead>
+                            <tr>
+                                <th>Requisito</th>
+                                <th>Caso Prueba</th>
+                                <th>Escenario</th>
+                                <th>Resultado</th>
+                                <th>Issue GitHub</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td>REQ-05</td>
+                                <td>CP-008</td>
+                                <td>Remover desde carrito (/cart.html)</td>
+                                <td><span class="status-pill sp-pass">✓ PASS</span></td>
+                                <td>—</td>
+                            </tr>
+                            <tr>
+                                <td>REQ-05</td>
+                                <td>CP-009</td>
+                                <td>Remover desde vista Products</td>
+                                <td><span class="status-pill sp-fail" id="rtm-cp9-status">✗ FAIL</span></td>
+                                <td><span class="status-pill sp-open" id="rtm-bug-link">#112 BUG-04 (P1)</span></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </article>
+
+                    <!-- Caja de Impacto / Resultado -->
+                    <div class="impact-alert-box" id="impact-box">
+                        <div class="impact-bar"></div>
+                        <div>
+                            <h4 style="margin:0 0 6px 0; font-size:1.2rem; color:#991B1B;" id="impact-title">Impacto / Resultado</h4>
+                            <p style="margin:0 0 8px 0; font-weight:800; color:#7F1D1D;" id="impact-state">
+                                Estado del Requisito: "Fallido / Prioridad P1".
+                            </p>
+                            <p style="margin:0; font-size:0.94rem; line-height:1.5; color:#7F1D1D;" id="impact-desc">
+                                La matriz visibiliza la falla, evitando liberaciones con errores críticos hasta que el Bug sea resuelto, en GitHub se lleva seguimiento de los avances, una vez resuelto se da la viabilidad para continuar con la liberación.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================
+         DIAPOSITIVA 5 (NUEVA): SIMULADOR EN VIVO — GESTIÓN EN GITHUB
+         (Issues, Pull Requests, Trabajo en Equipo y GitHub Projects)
+         ======================================================================== -->
+    <section class="slide" data-title="Gestión en GitHub Projects">
+        <div class="slide-inner">
+            <header class="slide-header reveal d-1">
+                <div class="header-bar"></div>
+                <div class="header-texts">
+                    <p class="header-kicker">Ejemplo Práctico Extendido — Flujo Colaborativo en Equipo</p>
+                    <h2 class="header-title">Gestión en GitHub: Issues, PRs y GitHub Projects</h2>
+                </div>
+            </header>
+
+            <!-- Simulador Interactivo de GitHub -->
+            <div class="gh-simulator reveal d-2">
+                <div class="gh-top-bar">
+                    <div class="gh-repo-path">
+                        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"/></svg>
+                        <span>equipo3-qa / saucedemo-testing</span>
+                        <span class="gh-lbl lbl-ok">GitHub Projects v2</span>
+                    </div>
+
+                    <div class="gh-stepper" id="gh-stepper">
+                        <button class="gh-step-btn active" data-step="1">1. Issue Requisito</button>
+                        <button class="gh-step-btn" data-step="2">2. QA Reporta Bug P1</button>
+                        <button class="gh-step-btn" data-step="3">3. Rama &amp; Pull Request</button>
+                        <button class="gh-step-btn" data-step="4">4. Code Review &amp; CI</button>
+                        <button class="gh-step-btn" data-step="5">5. Merge &amp; Done 🚀</button>
+                    </div>
+                </div>
+
+                <div class="gh-body">
+                    <!-- Tablero Kanban de GitHub Projects -->
+                    <div class="gh-board">
+                        <!-- Columna 1: Todo / Backlog -->
+                        <div class="gh-col">
+                            <div class="gh-col-head"><span>📋 Backlog / Req</span><span id="cnt-c1">1</span></div>
+                            <div id="col-1-cards"></div>
+                        </div>
+                        <!-- Columna 2: In Progress / Blocked -->
+                        <div class="gh-col">
+                            <div class="gh-col-head"><span>🧪 En QA / Bug P1</span><span id="cnt-c2">0</span></div>
+                            <div id="col-2-cards"></div>
+                        </div>
+                        <!-- Columna 3: In Review (PR) -->
+                        <div class="gh-col">
+                            <div class="gh-col-head"><span>🔍 In Review (PR)</span><span id="cnt-c3">0</span></div>
+                            <div id="col-3-cards"></div>
+                        </div>
+                        <!-- Columna 4: Done -->
+                        <div class="gh-col">
+                            <div class="gh-col-head"><span>✅ Done / Release</span><span id="cnt-c4">0</span></div>
+                            <div id="col-4-cards"></div>
+                        </div>
+                    </div>
+
+                    <!-- Inspector de Trazabilidad del Paso Actual -->
+                    <div class="gh-inspector">
+                        <div>
+                            <span class="gh-lbl lbl-req" id="gh-insp-badge">PASO 1 DE 5 · PLANIFICACIÓN</span>
+                            <h3 class="gh-inspector-title" id="gh-insp-title" style="margin-top:8px;">
+                                Creación de Issue #105 (REQ-05) en GitHub Projects
+                            </h3>
+                            <p style="font-size:0.84rem; color:#8B949E; line-height:1.45; margin:8px 0;" id="gh-insp-desc">
+                                El equipo registra el requisito como un Issue vinculado al Sprint en GitHub Projects y define la lista de casos de prueba (CP-008 y CP-009).
+                            </p>
+                        </div>
+
+                        <div class="gh-code-block" id="gh-insp-code">
+                            <span class="ref">Issue #105</span> · [REQ-05] Retirar producto del carrito<br>
+                            Assignee: <span class="ok">@andresgonzalez</span> (QA) · <span class="ok">@santiagogaviria</span> (Dev)<br>
+                            Tasklist:<br>
+                            - [x] CP-008: Eliminar desde /cart.html<br>
+                            - [ ] CP-009: Eliminar desde vista Products
+                        </div>
+
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+              <span style="font-size:0.75rem; color:#8B949E;" id="gh-automation-note">
+                ⚡ Automatización de GitHub Projects activa
+              </span>
+                            <button class="gh-step-btn active" id="btn-next-gh-step">
+                                Siguiente paso del flujo →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================
+         DIAPOSITIVA 6: APLICACIÓN PRÁCTICA EN SAUCEDEMO
+         ======================================================================== -->
+    <section class="slide" data-title="Aplicación Práctica en SauceDemo">
+        <div class="slide-inner">
+            <header class="slide-header reveal d-1">
+                <div class="header-bar"></div>
+                <div class="header-texts">
+                    <p class="header-kicker">Gestión de Pruebas y Trazabilidad en QA</p>
+                    <h2 class="header-title">Aplicación Práctica en SauceDemo</h2>
+                </div>
+            </header>
+
+            <div class="pill-banner reveal d-2">
+                <span>🛒 Módulo Evaluado: <b>Detalle de productos</b></span>
+            </div>
+
+            <!-- 3 Tarjetas Conectadas: REQ-05 -> CP-009 -> BUG-04 -->
+            <div class="sauce-flow reveal d-3">
+                <!-- 01 REQUISITO -->
+                <article class="qa-card top-blue">
+                    <div class="badge-circle bc-blue">01</div>
+                    <p class="card-kicker ck-blue">REQUISITO</p>
+                    <h3 class="card-heading">REQ-05</h3>
+                    <p class="card-body">
+                        El usuario debe poder retirar el producto.
+                    </p>
+                </article>
+
+                <div class="flow-arrow">--&gt;</div>
+
+                <!-- 02 CASO DE PRUEBA -->
+                <article class="qa-card top-cyan">
+                    <div class="badge-circle bc-cyan">02</div>
+                    <p class="card-kicker ck-cyan">CASO DE PRUEBA</p>
+                    <h3 class="card-heading">CP-009</h3>
+                    <p class="card-body">
+                        Eliminación de productos del carrito desde la ventana/vista Products.
+                    </p>
+                </article>
+
+                <div class="flow-arrow">--&gt;</div>
+
+                <!-- 03 FALLO DETECTADO -->
+                <article class="qa-card top-red">
+                    <div class="badge-circle bc-red">03</div>
+                    <p class="card-kicker ck-red">FALLO DETECTADO</p>
+                    <h3 class="card-heading">BUG-04</h3>
+                    <p class="card-body">
+                        En la ventana de los productos no permite remover, al presionar el botón remover no hace ninguna acción, no disminuye el contador del carrito.
+                    </p>
+                </article>
+            </div>
+
+            <!-- Mini-Simulador Interactivo de la vista Products de SauceDemo -->
+            <div class="sauce-sandbox reveal d-4">
+                <div style="display:flex; align-items:center; gap:14px;">
+                    <div style="background:var(--navy); color:#FFF; padding:8px 14px; border-radius:10px; font-weight:800; font-size:0.86rem;">
+                        🛒 Carrito SauceDemo: <span id="cart-counter" style="background:var(--red); padding:2px 8px; border-radius:999px; margin-left:4px;">1</span>
+                    </div>
+                    <div>
+                        <strong style="font-size:0.92rem; color:var(--navy);">Sauce Labs Backpack ($29.99)</strong>
+                        <span style="display:block; font-size:0.78rem; color:var(--text-muted);" id="sauce-sim-msg">
+              Prueba en vivo: Haz clic en "REMOVE" para reproducir el BUG-04 en la vista Products.
+            </span>
+                    </div>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button class="btn-remove-demo" id="btn-sauce-remove">REMOVE</button>
+                    <button class="btn-hud" id="btn-sauce-mode" title="Alternar entre Bug activo y PR #118 aplicado">
+                        🐞 Modo: BUG-04 Activo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Impacto de la Trazabilidad en el Negocio -->
+            <div class="blue-callout reveal d-5">
+                <div class="callout-bar"></div>
+                <div>
+                    <h4 class="callout-title">Impacto de la Trazabilidad en el Negocio</h4>
+                    <p class="callout-text">
+                        Enlazamos <b>BUG-04 → CP-009 → REQ-05</b>. Al visibilizar este bloqueo crítico en el panel de QA, el líder de equipo toma la decisión estratégica de <b>detener el pase a producción con prioridad P1</b>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================
+         DIAPOSITIVA 7: USO DE IA Y FUENTES CONSULTADAS
+         ======================================================================== -->
+    <section class="slide" data-title="Uso de IA y Fuentes">
+        <div class="slide-inner">
+            <header class="slide-header reveal d-1">
+                <div class="header-bar"></div>
+                <div class="header-texts">
+                    <p class="header-kicker">Gestión de Pruebas y Trazabilidad en QA</p>
+                    <h2 class="header-title">Uso de IA y Fuentes Consultadas</h2>
+                </div>
+            </header>
+
+            <div class="pill-banner reveal d-2">
+                <span>🤖 Inteligencia Artificial aplicada a la Trazabilidad y Calidad de Software</span>
+            </div>
+
+            <div class="cards-grid cols-2">
+                <!-- 01 Asistente de Diseño -->
+                <article class="qa-card top-blue reveal d-3">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div class="badge-circle bc-blue">01</div>
+                            <div>
+                                <p class="card-kicker ck-blue">ASISTENTE DE DISEÑO</p>
+                                <h3 class="card-heading" style="font-size:1.3rem;">Generación Automática</h3>
+                            </div>
+                        </div>
+                        <button class="btn-hud" id="btn-ai-gen" style="background:var(--blue-soft); color:var(--blue); border-color:var(--blue-border);">
+                            ✨ Simular LLM
+                        </button>
+                    </div>
+                    <p class="card-body">
+                        Los <b style="color:var(--navy);">LLMs</b> (como ChatGPT o Claude) pueden analizar Historias de Usuario y generar automáticamente los <b style="color:var(--navy);">Casos de Prueba base</b>, ahorrando horas de trabajo manual en el diseño de pruebas.
+                    </p>
+                    <div class="ai-output-box" id="ai-gen-output">
+                        Presiona "✨ Simular LLM" para generar casos de prueba a partir de REQ-05...
+                    </div>
+                </article>
+
+                <!-- 02 Cobertura y Alertas -->
+                <article class="qa-card top-cyan reveal d-4">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div class="badge-circle bc-cyan">02</div>
+                            <div>
+                                <p class="card-kicker ck-cyan">COBERTURA Y ALERTAS</p>
+                                <h3 class="card-heading" style="font-size:1.3rem;">Análisis de Brechas (Gap Analysis)</h3>
+                            </div>
+                        </div>
+                        <button class="btn-hud" id="btn-ai-gap" style="background:var(--cyan-soft); color:var(--cyan);">
+                            🔍 Escanear Matriz
+                        </button>
+                    </div>
+                    <p class="card-body">
+                        Herramientas inteligentes monitorean la Matriz de Trazabilidad y emiten alertas:
+                        <b style="color:var(--cyan);">"Atención: El requisito 'Login con Google' no tiene casos de prueba negativos asociados"</b>.
+                    </p>
+                    <div class="ai-output-box" id="ai-gap-output">
+                        Presiona "🔍 Escanear Matriz" para auditar brechas de cobertura en la RTM...
+                    </div>
+                </article>
+            </div>
+
+            <!-- Fuentes Consultadas -->
+            <div class="blue-callout reveal d-5">
+                <div class="callout-bar"></div>
+                <div>
+                    <h4 class="callout-title">📚 Fuentes Consultadas</h4>
+                    <ol style="margin:0; padding-left:20px; color:#1E40AF; font-size:0.96rem; line-height:1.6;">
+                        <li><b>Glosario ISTQB</b> (International Software Testing Qualifications Board).</li>
+                        <li><b>Documentación oficial de Xray</b> Test Management by Atlassian.</li>
+                        <li><b>GitHub Docs</b> — <i>About GitHub Projects, Linking a Pull Request to an Issue &amp; Automated Traceability</i>.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- ==========================================================================
+     LÓGICA INTERACTIVA Y ANIMACIONES AVANZADAS (JavaScript)
+     ========================================================================== -->
+<script>
+    (function () {
+        const deck = document.getElementById('deck');
+        const slides = Array.from(document.querySelectorAll('.slide'));
+        const dotsContainer = document.getElementById('hud-dots');
+        const curSlideEl = document.getElementById('cur-slide');
+        const totSlidesEl = document.getElementById('tot-slides');
+        const progressLine = document.getElementById('progress-line');
+
+        let currentIndex = 0;
+        totSlidesEl.textContent = slides.length;
+
+        /* 1. Crear puntos de navegación en el HUD */
+        slides.forEach((slide, idx) => {
+            const dot = document.createElement('button');
+            dot.className = 'nav-dot' + (idx === 0 ? ' active' : '');
+            dot.title = (idx + 1) + '. ' + (slide.dataset.title || 'Diapositiva');
+            dot.addEventListener('click', () => goToSlide(idx));
+            dotsContainer.appendChild(dot);
+        });
+        const dots = Array.from(dotsContainer.children);
+
+        function goToSlide(idx) {
+            currentIndex = Math.max(0, Math.min(slides.length - 1, idx));
+            slides[currentIndex].scrollIntoView({ behavior: 'smooth' });
+            updateHud();
+        }
+
+        function updateHud() {
+            curSlideEl.textContent = currentIndex + 1;
+            dots.forEach((d, i) => d.classList.toggle('active', i === currentIndex));
+            const pct = ((currentIndex + 1) / slides.length) * 100;
+            progressLine.style.width = pct + '%';
+        }
+
+        /* 2. IntersectionObserver para activar animaciones de entrada por diapositiva */
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                    const idx = slides.indexOf(entry.target);
+                    if (idx !== -1) {
+                        currentIndex = idx;
+                        updateHud();
+                    }
+                }
+            });
+        }, { root: deck, threshold: 0.45 });
+
+        slides.forEach(s => observer.observe(s));
+        slides[0].classList.add('in-view');
+        updateHud();
+
+        /* 3. Botones y Teclado */
+        document.getElementById('btn-prev').addEventListener('click', () => goToSlide(currentIndex - 1));
+        document.getElementById('btn-next').addEventListener('click', () => goToSlide(currentIndex + 1));
+
+        document.getElementById('btn-fullscreen').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (['ArrowDown', 'ArrowRight', 'PageDown', ' '].includes(e.key)) {
+                if (e.target.tagName === 'BUTTON') return;
+                e.preventDefault();
+                goToSlide(currentIndex + 1);
+            } else if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(e.key)) {
+                e.preventDefault();
+                goToSlide(currentIndex - 1);
+            } else if (e.key === 'f' || e.key === 'F') {
+                document.getElementById('btn-fullscreen').click();
+            }
+        });
+
+        /* 4. Efecto 3D Tilt e Iluminación Radial en todas las tarjetas .qa-card */
+        document.querySelectorAll('.qa-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = ((y - centerY) / centerY) * -3.5;
+                const rotateY = ((x - centerX) / centerX) * 3.5;
+
+                card.style.setProperty('--mx', x + 'px');
+                card.style.setProperty('--my', y + 'px');
+                card.style.transform = `perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-3px)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = '';
+            });
+        });
+
+        /* 5. Diapositiva 2: Conmutador Caos vs. Trazabilidad */
+        const traceBar = document.getElementById('trace-demo-bar');
+        const btnChaos = document.getElementById('btn-toggle-chaos');
+        const traceEndBadge = document.getElementById('trace-end-badge');
+        let chaosMode = false;
+
+        btnChaos.addEventListener('click', () => {
+            chaosMode = !chaosMode;
+            traceBar.classList.toggle('chaos-mode', chaosMode);
+            if (chaosMode) {
+                btnChaos.textContent = '⚠️ Modo Sin Trazabilidad (Caos Activo)';
+                btnChaos.style.background = 'var(--red)';
+                traceEndBadge.textContent = '❓ ¿Bug en Producción?';
+                traceEndBadge.style.background = 'var(--red-soft)';
+                traceEndBadge.style.color = 'var(--red)';
+            } else {
+                btnChaos.textContent = '🔄 Simular: Modo Con Trazabilidad';
+                btnChaos.style.background = 'var(--navy)';
+                traceEndBadge.textContent = '🚀 Decisión GO / NO-GO';
+                traceEndBadge.style.background = 'var(--green-soft)';
+                traceEndBadge.style.color = 'var(--green)';
+            }
+        });
+
+        /* 6. Diapositiva 3: Explorador Interactivo de las 4 Fases (Shift-Left) */
+        const phaseData = {
+            1: {
+                tag: 'FASE 01 · ANÁLISIS DE REQUISITOS',
+                title: 'Historia de Usuario registrada en la Matriz de Trazabilidad (RTM)',
+                code: 'ID: REQ-05 | "El usuario debe poder retirar el producto" | Estado: Diseñando pruebas'
+            },
+            2: {
+                tag: 'FASE 02 · DISEÑO DE PRUEBAS',
+                title: 'Casos de Prueba enlazados bidireccionalmente al Requisito REQ-05',
+                code: 'REQ-05 ➔ CP-008 (Remover en Carrito) + CP-009 (Remover en vista Products)'
+            },
+            3: {
+                tag: 'FASE 03 · EJECUCIÓN Y REPORTE DE BUGS',
+                title: 'Detección de bloqueo y enlace inmediato del Defecto en GitHub Issues',
+                code: 'CP-009: FAIL ✗ ➔ Se abre Issue #112 [BUG-04] con etiqueta Priority: P1'
+            },
+            4: {
+                tag: 'FASE 04 · CIERRE Y DECISIÓN GO / NO-GO',
+                title: 'Evaluación ejecutiva de la Matriz antes de liberar a Producción',
+                code: 'Cobertura REQ-05: 50% Pass / 1 Bug P1 Abierto ➔ DECISIÓN: NO-GO (Detener Release)'
+            }
+        };
+
+        const phaseCards = document.querySelectorAll('.phase-card');
+        phaseCards.forEach(card => {
+            card.addEventListener('click', () => {
+                phaseCards.forEach(c => c.classList.remove('active-phase'));
+                card.classList.add('active-phase');
+                const p = phaseData[card.dataset.phase];
+                document.getElementById('pd-tag').textContent = p.tag;
+                document.getElementById('pd-title').textContent = p.title;
+                document.getElementById('pd-code').textContent = p.code;
+            });
+        });
+
+        /* 7. Diapositiva 4: Simulador de Resolución en la Matriz RTM */
+        const btnSimFix = document.getElementById('btn-sim-fix');
+        const cp9Status = document.getElementById('rtm-cp9-status');
+        const bugLink = document.getElementById('rtm-bug-link');
+        const impactBox = document.getElementById('impact-box');
+        const impactTitle = document.getElementById('impact-title');
+        const impactState = document.getElementById('impact-state');
+        const impactDesc = document.getElementById('impact-desc');
+        let bugResolved = false;
+
+        btnSimFix.addEventListener('click', () => {
+            bugResolved = !bugResolved;
+            impactBox.classList.toggle('resolved', bugResolved);
+            if (bugResolved) {
+                btnSimFix.textContent = '↩️ Volver a Estado Fallido (P1)';
+                cp9Status.className = 'status-pill sp-pass';
+                cp9Status.textContent = '✓ PASS (Retest)';
+                bugLink.className = 'status-pill sp-merged';
+                bugLink.textContent = 'PR #118 Merged ✓';
+                impactTitle.style.color = '#065F46';
+                impactTitle.textContent = 'Impacto / Resultado (Tras cierre en GitHub)';
+                impactState.style.color = '#065F46';
+                impactState.textContent = 'Estado del Requisito: "Aprobado / GO para Producción ✅".';
+                impactDesc.style.color = '#065F46';
+                impactDesc.textContent = 'Una vez fusionado el Pull Request #118 en GitHub y re-ejecutado CP-009 con éxito, la Matriz actualiza su estado y habilita la liberación segura.';
+            } else {
+                btnSimFix.textContent = '🔧 Simular Resolución del Bug en GitHub';
+                cp9Status.className = 'status-pill sp-fail';
+                cp9Status.textContent = '✗ FAIL';
+                bugLink.className = 'status-pill sp-open';
+                bugLink.textContent = '#112 BUG-04 (P1)';
+                impactTitle.style.color = '#991B1B';
+                impactTitle.textContent = 'Impacto / Resultado';
+                impactState.style.color = '#7F1D1D';
+                impactState.textContent = 'Estado del Requisito: "Fallido / Prioridad P1".';
+                impactDesc.style.color = '#7F1D1D';
+                impactDesc.textContent = 'La matriz visibiliza la falla, evitando liberaciones con errores críticos hasta que el Bug sea resuelto, en GitHub se lleva seguimiento de los avances, una vez resuelto se da la viabilidad para continuar con la liberación.';
+            }
+        });
+
+        /* 8. Diapositiva 5: Simulador Completo de GitHub Projects + Issues + PR */
+        const ghSteps = {
+            1: {
+                badge: 'PASO 1 DE 5 · PLANIFICACIÓN EN GITHUB ISSUES',
+                title: '1. Creación del Issue de Requisito (#105 REQ-05)',
+                desc: 'El equipo crea la Historia de Usuario en GitHub Issues y la añade al tablero de GitHub Projects. Se asignan responsables y criterios de aceptación.',
+                code: `<span class="ref">Issue #105</span> · [REQ-05] El usuario debe poder retirar el producto<br>Milestone: <span class="ok">Sprint 4 - SauceDemo</span><br>Sub-tasks:<br>- [x] CP-008: Remover desde /cart.html (PASS)<br>- [ ] CP-009: Remover desde vista Products`,
+                cols: {
+                    c1: [
+                        { id: '#105 · Issue', title: '[REQ-05] Retirar producto del carrito', labels: [['REQ', 'lbl-req']], user: '@santiagogaviria', hi: true }
+                    ],
+                    c2: [], c3: [], c4: []
+                }
+            },
+            2: {
+                badge: 'PASO 2 DE 5 · EJECUCIÓN QA Y BLOQUEO P1',
+                title: '2. Andrés ejecuta CP-009 y reporta el Issue #112 (BUG-04)',
+                desc: 'Al detectar que el botón Remove no responde en la vista Products, QA crea el Issue #112 enlazado a #105 con etiqueta P1. GitHub Projects mueve la tarjeta a Bloqueado.',
+                code: `<span class="kw">Issue #112 [BUG-04]</span> · Botón Remove no elimina en vista Products<br>Labels: <span class="kw">bug</span>, <span class="kw">priority: P1</span> · Blocks: <span class="ref">#105</span><br>Reported by: <span class="ok">@andresgonzalez</span> (QA Lead)`,
+                cols: {
+                    c1: [],
+                    c2: [
+                        { id: '#105 · Bloqueado', title: '[REQ-05] Retirar producto del carrito', labels: [['Blocked', 'lbl-bug']], user: '@andresgonzalez', hi: false },
+                        { id: '#112 · Bug Issue', title: '[BUG-04] Botón Remove inactivo en Products', labels: [['bug', 'lbl-bug'], ['P1', 'lbl-p1']], user: '@andresgonzalez', hi: true }
+                    ],
+                    c3: [], c4: []
+                }
+            },
+            3: {
+                badge: 'PASO 3 DE 5 · DESARROLLO Y PULL REQUEST',
+                title: '3. Santiago crea la rama y abre el Pull Request #118',
+                desc: 'Desarrollo corrige el listener del botón Remove en una rama dedicada y abre el PR #118 incluyendo "Fixes #112" para automatizar la trazabilidad.',
+                code: `Branch: <span class="ref">fix/bug-04-remove-products</span> ➔ <span class="ref">main</span><br><span class="ok">PR #118</span>: Corrige handler onClick en botón Remove<br>Descripción: <span class="kw">Fixes #112</span> · Refs <span class="ref">#105</span> (Vinculación automática)`,
+                cols: {
+                    c1: [],
+                    c2: [
+                        { id: '#105 · En espera', title: '[REQ-05] Retirar producto del carrito', labels: [['REQ', 'lbl-req']], user: '@santiagogaviria', hi: false }
+                    ],
+                    c3: [
+                        { id: 'PR #118 · Pull Request', title: 'fix(products): decrementar carrito en botón Remove', labels: [['PR', 'lbl-pr'], ['Fixes #112', 'lbl-ok']], user: '@santiagogaviria', hi: true }
+                    ],
+                    c4: []
+                }
+            },
+            4: {
+                badge: 'PASO 4 DE 5 · CODE REVIEW EN EQUIPO & CI/CD',
+                title: '4. GitHub Actions ejecuta CP-009 y QA aprueba el PR',
+                desc: 'GitHub Actions corre las pruebas de regresión automáticamente. Andrés revisa el código en el PR #118, valida que CP-009 pasa y marca "Approved".',
+                code: `✓ <span class="ok">GitHub Actions / Playwright QA</span>: CP-008 PASS, CP-009 PASS<br>✓ <span class="ok">@andresgonzalez</span> approved these changes (Reviewers)<br>✓ Branch has no conflicts with base branch`,
+                cols: {
+                    c1: [], c2: [],
+                    c3: [
+                        { id: 'PR #118 · Approved ✓', title: 'fix(products): decrementar carrito en botón Remove', labels: [['QA Verified', 'lbl-ok'], ['CI Passing', 'lbl-ok']], user: '@andres + @santiago', hi: true }
+                    ],
+                    c4: []
+                }
+            },
+            5: {
+                badge: 'PASO 5 DE 5 · MERGE Y AUTOMATIZACIÓN KANBAN',
+                title: '5. Merge Pull Request y cierre automático en GitHub Projects',
+                desc: 'Al fusionar el PR #118 a main, GitHub cierra automáticamente el Issue #112 (BUG-04), mueve las tarjetas a Done y desbloquea el pase a producción (GO).',
+                code: `<span class="ok">Merged PR #118</span> into main (Commit 9f4a2d1)<br>⚡ Auto-closed <span class="ref">Issue #112 (BUG-04)</span> via keyword "Fixes #112"<br>🚀 <span class="ok">REQ-05 Status: 100% PASS — Viabilidad de Liberación APROBADA</span>`,
+                cols: {
+                    c1: [], c2: [], c3: [],
+                    c4: [
+                        { id: '#105 · Completado', title: '[REQ-05] Retirar producto del carrito', labels: [['GO Release', 'lbl-ok']], user: 'Equipo 3', hi: true },
+                        { id: '#112 · Closed by PR #118', title: '[BUG-04] Botón Remove inactivo en Products', labels: [['Resolved', 'lbl-pr']], user: '@santiagogaviria', hi: false }
+                    ]
+                }
+            }
+        };
+
+        let curGhStep = 1;
+        const ghStepBtns = document.querySelectorAll('#gh-stepper .gh-step-btn');
+
+        function renderGhCard(item) {
+            const labelsHtml = item.labels.map(([txt, cls]) => `<span class="gh-lbl ${cls}">${txt}</span>`).join('');
+            return `
+      <div class="gh-card-item ${item.hi ? 'highlight-card' : ''}">
+        <span class="gh-card-id">${item.id}</span>
+        <span class="gh-card-title">${item.title}</span>
+        <div class="gh-labels">${labelsHtml}</div>
+        <div class="gh-avatars">
+          <span>Asignado</span>
+          <span class="avatar-chip">${item.user}</span>
+        </div>
+      </div>
+    `;
+        }
+
+        function setGhStep(step) {
+            curGhStep = step;
+            const data = ghSteps[step];
+            ghStepBtns.forEach(b => b.classList.toggle('active', Number(b.dataset.step) === step));
+
+            document.getElementById('gh-insp-badge').textContent = data.badge;
+            document.getElementById('gh-insp-title').textContent = data.title;
+            document.getElementById('gh-insp-desc').textContent = data.desc;
+            document.getElementById('gh-insp-code').innerHTML = data.code;
+
+            ['1', '2', '3', '4'].forEach(colNum => {
+                const list = data.cols['c' + colNum];
+                document.getElementById('cnt-c' + colNum).textContent = list.length;
+                document.getElementById('col-' + colNum + '-cards').innerHTML = list.map(renderGhCard).join('');
+            });
+        }
+
+        ghStepBtns.forEach(btn => {
+            btn.addEventListener('click', () => setGhStep(Number(btn.dataset.step)));
+        });
+
+        document.getElementById('btn-next-gh-step').addEventListener('click', () => {
+            const next = curGhStep < 5 ? curGhStep + 1 : 1;
+            setGhStep(next);
+        });
+
+        setGhStep(1);
+
+        /* 9. Diapositiva 6: Mini-Simulador del botón Remove en SauceDemo */
+        const btnSauceRemove = document.getElementById('btn-sauce-remove');
+        const btnSauceMode = document.getElementById('btn-sauce-mode');
+        const cartCounter = document.getElementById('cart-counter');
+        const sauceMsg = document.getElementById('sauce-sim-msg');
+        let saucePatched = false;
+
+        btnSauceRemove.addEventListener('click', () => {
+            if (!saucePatched) {
+                btnSauceRemove.classList.remove('shake-error');
+                void btnSauceRemove.offsetWidth;
+                btnSauceRemove.classList.add('shake-error');
+                sauceMsg.innerHTML = '<b style="color:var(--red);">✗ FALLO REPRODUCIDO (BUG-04):</b> El evento onClick en la vista Products no hace nada y el contador sigue en 1.';
+            } else {
+                cartCounter.textContent = '0';
+                cartCounter.style.background = 'var(--green)';
+                btnSauceRemove.textContent = 'ADD TO CART';
+                btnSauceRemove.style.borderColor = 'var(--green)';
+                btnSauceRemove.style.color = 'var(--green)';
+                sauceMsg.innerHTML = '<b style="color:var(--green);">✓ CP-009 APROBADO:</b> Con el parche del PR #118, el producto se retira y el contador baja a 0.';
+            }
+        });
+
+        btnSauceMode.addEventListener('click', () => {
+            saucePatched = !saucePatched;
+            cartCounter.textContent = '1';
+            cartCounter.style.background = 'var(--red)';
+            btnSauceRemove.textContent = 'REMOVE';
+            btnSauceRemove.style.borderColor = 'var(--red)';
+            btnSauceRemove.style.color = 'var(--red)';
+            if (saucePatched) {
+                btnSauceMode.textContent = '✅ Modo: PR #118 Aplicado (Fix)';
+                sauceMsg.textContent = 'Modo parcheado activo: Haz clic en "REMOVE" para verificar que ahora sí disminuye el carrito.';
+            } else {
+                btnSauceMode.textContent = '🐞 Modo: BUG-04 Activo';
+                sauceMsg.textContent = 'Prueba en vivo: Haz clic en "REMOVE" para reproducir el BUG-04 en la vista Products.';
+            }
+        });
+
+        /* 10. Diapositiva 7: Simuladores de IA (Generación de Casos y Gap Analysis) */
+        document.getElementById('btn-ai-gen').addEventListener('click', () => {
+            const box = document.getElementById('ai-gen-output');
+            box.innerHTML = '⏳ Analizando Historia de Usuario REQ-05 con LLM...';
+            setTimeout(() => {
+                box.innerHTML = `
+        <span style="color:var(--blue); font-weight:700;">✓ 3 Casos Generados automáticamente:</span><br>
+        • <b>CP-008 (+):</b> Retirar ítem desde /cart.html ➔ Contador = 0<br>
+        • <b>CP-009 (+):</b> Retirar ítem desde vista /inventory.html (Products)<br>
+        • <b>CP-010 (-):</b> Persistir carrito vacío tras recargar sesión (F5)
+      `;
+            }, 450);
+        });
+
+        document.getElementById('btn-ai-gap').addEventListener('click', () => {
+            const box = document.getElementById('ai-gap-output');
+            box.innerHTML = '🔍 Escaneando Matriz de Trazabilidad (RTM)...';
+            setTimeout(() => {
+                box.innerHTML = `
+        <span style="color:var(--amber); font-weight:700;">⚠️ Alerta de Brecha Detectada (Gap Analysis):</span><br>
+        • <b>REQ-01 (Login con Google):</b> 0 casos de prueba negativos asociados.<br>
+        • <b>Acción sugerida:</b> Agregar caso para token OAuth expirado o cancelado.
+      `;
+            }, 450);
+        });
+    })();
+</script>
+</body>
+</html>
